@@ -93,15 +93,12 @@ if __name__ == '__main__':
     previous_assignments: dict[int, list[str]] = {}
     while True:
         t1 = time.perf_counter()
+        # ? Refresh VCS client just in case
+        vcsclient = Client.login(args.username, args.password)
         for name, class_id in class_ids:
             # * Insert course subtasks
             try:
-                # ? Refresh VCS client just in case
-                vcsclient = Client.login(args.username, args.password)
-                assignments = vcsclient.homework(
-                    class_id,
-                    NavigationConfig(datetime(2022, 2, 18))
-                )
+                assignments = vcsclient.homework(class_id)
             except NoEntreeError:
                 continue
 
