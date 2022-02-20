@@ -1,5 +1,12 @@
 # virtual env
 /env
+/env-wsl
+
+# pyinstaller
+__pycache__
+/build
+/dist
+*.spec
 
 # debugging
 client_secret.json
