@@ -7,12 +7,9 @@
 **Do use virtualenv when running the script.**
 
 ```text
-usage: main.py [-h] [--debug] --username USERNAME --password PASSWORD [--listname LISTNAME] courses [courses ...]
+usage: main.py [-h] [--debug] --username USERNAME --password PASSWORD [--listname LISTNAME]
 
 Integrates learn@vcs with Google Tasks
-
-positional arguments:
-  courses              Check for assignments for this specific course
 
 options:
   -h, --help           show this help message and exit
