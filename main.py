@@ -10,7 +10,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from learnvcs import Client, NavigationConfig, NoEntreeError
+from learnvcs import Client, NoEntreeError
 
 
 def refresh_daemon(credentials: Credentials) -> None:
@@ -32,12 +32,6 @@ if __name__ == '__main__':
 
     parser.add_argument('--debug', action='store_true')
     parser.add_argument(
-        'courses',
-        type=str,
-        help='Check for assignments for this specific course',
-        nargs='+',
-    )
-    parser.add_argument(
         '--username',
         help='learn@VCS username',
         required=True
@@ -56,13 +50,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     vcsclient = Client.login(args.username, args.password)
+
+    courses = list(vcsclient.courses().items())
+    print('Choose the courses you would like to check. (seperated by commas: 0, 2, 4...)')
+    for i, c in enumerate(courses):
+        print(f'[{i}] {c[0]}')
+
     class_ids: list[tuple[str, int]] = []
-    courses = vcsclient.courses()
-    for name in courses:
-        for c in args.courses:
-            if c.lower() in name.lower():
-                class_ids.append((name, courses[name]))
-                break
+    for c in input(' > ').split(','):
+        if len(c.strip()) > 0:
+            class_ids.append(courses[int(c)])
 
     logging.info(class_ids)
 
@@ -95,7 +92,7 @@ if __name__ == '__main__':
         t1 = time.perf_counter()
         # ? Refresh VCS client just in case
         vcsclient = Client.login(args.username, args.password)
-        for name, class_id in class_ids:
+        for c, class_id in class_ids:
             # * Insert course subtasks
             try:
                 assignments = vcsclient.homework(class_id)
@@ -108,7 +105,7 @@ if __name__ == '__main__':
                 # ? Create course task
                 course_task_id = tasks.insert(
                     tasklist=list_id,
-                    body={'title': name}
+                    body={'title': c}
                 ).execute()['id']
 
                 # ? Create course subtasks
