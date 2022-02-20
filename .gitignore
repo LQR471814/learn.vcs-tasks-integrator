@@ -1,3 +1,6 @@
+# virtual env
 /env
+
+# debugging
 client_secret.json
 debug.cmd

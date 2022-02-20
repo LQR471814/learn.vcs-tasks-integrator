@@ -4,7 +4,6 @@ import time
 from datetime import datetime
 from threading import Thread
 
-import httplib2
 from google.auth.transport import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -22,8 +21,6 @@ def refresh_daemon(credentials: Credentials) -> None:
 
 
 if __name__ == '__main__':
-    http = httplib2.Http(cache=".cache")
-
     logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser(
