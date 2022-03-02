@@ -1,4 +1,4 @@
 google_auth_oauthlib==0.4.6
 google_api_python_client==2.37.0
-learnvcs==0.2.2
+learnvcs==0.3.2
 protobuf==3.19.4

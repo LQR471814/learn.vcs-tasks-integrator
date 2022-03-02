@@ -21,7 +21,13 @@ def refresh_daemon(credentials: Credentials) -> None:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    logger = logging.getLogger('tasks-integrator')
+    logger.setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser(
         description="Integrates learn@vcs with Google Tasks"
@@ -58,7 +64,7 @@ if __name__ == '__main__':
         if len(c.strip()) > 0:
             class_ids.append(courses[int(c)])
 
-    logging.info(class_ids)
+    logger.info(class_ids)
 
     auth = InstalledAppFlow.from_client_secrets_file(
         "client_secret.json", scopes=["https://www.googleapis.com/auth/tasks"]
@@ -80,7 +86,7 @@ if __name__ == '__main__':
             if l['title'] == args.listname:
                 tasklists.delete(tasklist=l['id']).execute()
     except HttpError as err:
-        logging.error(err)
+        logger.error(err)
 
     list_id = tasklists.insert(body={'title': args.listname}).execute()['id']
 
@@ -115,7 +121,7 @@ if __name__ == '__main__':
 
                 previous_assignments[class_id] = assignments
         t2 = time.perf_counter()
-        logging.info(f'Fetched assignments and updated tasks in {round(t2 - t1, 2)}s')
+        logger.info(f'Fetched assignments and updated tasks in {round(t2 - t1, 2)}s')
 
         # ? Wait 4 hours before fetching homework again
         time.sleep(60 * 60 * 4)
