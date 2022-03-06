@@ -16,8 +16,13 @@ def refresh_daemon(credentials: Credentials) -> None:
     if credentials.expired:
         credentials.refresh(Request())
     while True:
-        time.sleep((credentials.expiry - datetime.now()).total_seconds())
+        time.sleep((credentials.expiry - datetime.today()).total_seconds())
         credentials.refresh(Request())
+
+
+def is_weekend() -> bool:
+    today = datetime.today()
+    return today.day == 5 or today.day == 6
 
 
 def main(logger: logging.Logger = logging) -> None:
@@ -45,7 +50,7 @@ def main(logger: logging.Logger = logging) -> None:
 
     courses_a, courses_b = context.courses
 
-    current_date = datetime.now()
+    current_date = datetime.today()
     current_day = context.daystart
 
     previous_assignments: dict[str, list[str]] = {}
@@ -53,12 +58,18 @@ def main(logger: logging.Logger = logging) -> None:
     while True:
         t1 = time.perf_counter()
 
-        if (datetime.now() - current_date).days > 0:
+        if is_weekend() and not context.check_weekends:
+            today = datetime.today()
+            future = datetime(today.year, today.month, today.day + 1)
+            time.sleep((future - today).seconds)
+            continue
+
+        if (datetime.today() - current_date).days > 0:
             if current_day == Day.A:
                 current_day = Day.B
             else:
                 current_day = Day.A
-            current_date = datetime.now()
+            current_date = datetime.today()
 
         # ? Refresh VCS client just in case
         vcsclient = Client.login(context.username, context.password)

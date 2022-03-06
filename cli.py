@@ -18,6 +18,7 @@ class TaskContext:
 
     daystart: str
     courses: tuple[CourseList, CourseList]
+    check_weekends: bool
 
     def __init__(self) -> None:
         # * Parse arguments
@@ -28,7 +29,14 @@ class TaskContext:
         parser.add_argument('--debug', action='store_true')
 
         parser.add_argument(
-            '--daystart',
+            '--check-weekends',
+            help=f"Alternate days and scan assignments on the weekends.",
+            action='store_true',
+            default=False
+        )
+
+        parser.add_argument(
+            '--day-start',
             help=f"The day to start on '{Day.A}' or '{Day.B}', "
             'this will only take effect when --ab is present',
             default=Day.A
@@ -54,7 +62,8 @@ class TaskContext:
         self.username = args.username
         self.password = args.password
         self.listname = args.listname
-        self.daystart = args.daystart
+        self.daystart = args.day_start
+        self.check_weekends = args.check_weekends
 
         # * Pick classes
         vcsclient = Client.login(args.username, args.password)
