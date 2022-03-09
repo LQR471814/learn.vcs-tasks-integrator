@@ -53,7 +53,7 @@ def main(logger: logging.Logger = logging) -> None:
     current_date = datetime.today()
     current_day = context.daystart
 
-    previous_assignments: dict[str, list[str]] = {}
+    assignment_cache: set[int] = set()
 
     while True:
         t1 = time.perf_counter()
@@ -73,22 +73,27 @@ def main(logger: logging.Logger = logging) -> None:
 
         # ? Refresh VCS client just in case
         vcsclient = Client.login(context.username, context.password)
-        assignments: dict[str, list[str]] = {}
+        course_assignments: list[tuple[str, list[str]]] = []
 
         courses = courses_a if current_day == Day.A else courses_b
-        logger.info(f'Courses: {courses}')
+        logger.info(f'Today\'s Courses: {courses}')
 
         for class_name, class_id in courses:
             # * Insert course subtasks
             try:
-                assignments[class_name] = vcsclient.homework(class_id)
+                course_assignments.append((class_name, vcsclient.homework(class_id)))
             except NoEntreeError:
                 continue
 
-        if assignments != previous_assignments:
-            tasks.clear(tasklist=list_id).execute()
+        logger.info(f'Assignments {course_assignments} Cache {assignment_cache}')
 
-            for name in assignments:
+        new_cache = set()
+        for name, value in course_assignments:
+            hashed_assignment = hash(tuple(value))
+            if hashed_assignment not in assignment_cache:
+                logger.info(f'Course {name} cache invalidated, updating...')
+                tasks.clear(tasklist=list_id).execute()
+
                 # ? Create course task
                 course_task_id = tasks.insert(
                     tasklist=list_id,
@@ -96,7 +101,7 @@ def main(logger: logging.Logger = logging) -> None:
                 ).execute()['id']
 
                 # ? Create course subtasks
-                for text in assignments[name]:
+                for text in value:
                     subtask_id = tasks.insert(
                         tasklist=list_id,
                         body={'title': text}
@@ -107,8 +112,8 @@ def main(logger: logging.Logger = logging) -> None:
                         task=subtask_id,
                         parent=course_task_id
                     ).execute()
-
-                previous_assignments[class_id] = assignments
+            new_cache.add(hashed_assignment)
+        assignment_cache = new_cache
 
         t2 = time.perf_counter()
         logger.info(
@@ -116,6 +121,7 @@ def main(logger: logging.Logger = logging) -> None:
         )
 
         # ? Wait 4 hours before fetching homework again
+        # ? as teachers may post in the morning just before their class
         time.sleep(60 * 60 * 4)
 
 
