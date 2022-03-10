@@ -25,6 +25,10 @@ def is_weekend() -> bool:
     return today.day == 5 or today.day == 6
 
 
+#? Just in case one is looking for the documentation of
+#? the python Google Tasks api here is the link
+#? https://googleapis.github.io/google-api-python-client/docs/dyn/tasks_v1.html
+#? since it's an absolute pain to find
 def main(logger: logging.Logger = logging) -> None:
     context = TaskContext()
 
@@ -65,10 +69,9 @@ def main(logger: logging.Logger = logging) -> None:
             continue
 
         if (datetime.today() - current_date).days > 0:
-            if current_day == Day.A:
-                current_day = Day.B
-            else:
-                current_day = Day.A
+            new_day = Day.B if current_day == Day.A else Day.A
+            logger.info(f'Day swap {current_day} -> {new_day}')
+            current_day = new_day
             current_date = datetime.today()
 
         # ? Refresh VCS client just in case
@@ -88,11 +91,21 @@ def main(logger: logging.Logger = logging) -> None:
         logger.info(f'Assignments {course_assignments} Cache {assignment_cache}')
 
         new_cache = set()
+        cleared = False
         for name, value in course_assignments:
             hashed_assignment = hash(tuple(value))
             if hashed_assignment not in assignment_cache:
                 logger.info(f'Course {name} cache invalidated, updating...')
-                tasks.clear(tasklist=list_id).execute()
+
+                #? Clear all previous tasks if cache is invalid
+                if not cleared:
+                    itemlist = tasks.list(tasklist=list_id).execute()
+                    if itemlist.get('items') is not None:
+                        batch = service.new_batch_http_request()
+                        for task in itemlist['items']:
+                            batch.add(tasks.delete(tasklist=list_id, task=task['id']))
+                        batch.execute()
+                    cleared = True
 
                 # ? Create course task
                 course_task_id = tasks.insert(
@@ -101,17 +114,24 @@ def main(logger: logging.Logger = logging) -> None:
                 ).execute()['id']
 
                 # ? Create course subtasks
+                batch = service.new_batch_http_request()
+                subtasks: list[str] = []
                 for text in value:
-                    subtask_id = tasks.insert(
-                        tasklist=list_id,
-                        body={'title': text}
-                    ).execute()['id']
+                    batch.add(
+                        tasks.insert(tasklist=list_id, body={'title': text}),
+                        callback=lambda _, r, __ : subtasks.append(r['id'])
+                    )
+                batch.execute()
 
-                    tasks.move(
+                batch = service.new_batch_http_request()
+                for subtask_id in subtasks:
+                    batch.add(tasks.move(
                         tasklist=list_id,
                         task=subtask_id,
-                        parent=course_task_id
-                    ).execute()
+                        parent=course_task_id,
+                    ))
+                batch.execute()
+
             new_cache.add(hashed_assignment)
         assignment_cache = new_cache
 
