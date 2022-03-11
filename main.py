@@ -68,7 +68,7 @@ def main(logger: logging.Logger = logging) -> None:
             time.sleep((future - today).seconds)
             continue
 
-        if (datetime.today() - current_date).days > 0:
+        if datetime.today().day - current_date.day > 0:
             new_day = Day.B if current_day == Day.A else Day.A
             logger.info(f'Day swap {current_day} -> {new_day}')
             current_day = new_day
